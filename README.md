@@ -1,8 +1,15 @@
 # aiform
 
-Simple Rust macros for OpenAI-compatible tool calling and structured output.
+Type-safe AI agents and tool calling for Rust.
 
-Built on the [`async-openai`](https://docs.rs/async-openai) library.
+Built on [`async-openai`](https://docs.rs/async-openai), providing type-safe tool definitions, agent execution loops, and multi-agent coordination.
+
+## Why aiform?
+
+- **Type-safe** - Tool schemas generated from your types at compile time
+- **Simple** - Clean builder API, no complex abstractions
+- **Fast** - Zero-cost abstractions, true async parallelism
+- **Composable** - Agents are tools, tools are agents
 
 ## Install
 
@@ -10,10 +17,13 @@ Built on the [`async-openai`](https://docs.rs/async-openai) library.
 cargo add aiform
 ```
 
-## Example
+## Quick Start
+
+### Define Tools
 
 ```rust
-use aiform::*;
+use aiform::prelude::*;
+use serde::Deserialize;
 
 #[derive(ToolArg, Deserialize)]
 struct WeatherArgs {
@@ -22,37 +32,83 @@ struct WeatherArgs {
 }
 
 #[tool("Get the current weather for a location")]
-async fn get_weather(args: WeatherArgs) -> Result<String, Box<dyn Error + Send + Sync>> {
-    Ok(format!("Weather in {}: 22° {}", args.location, args.unit))
-}
-
-#[tokio::main]
-async fn main() {
-    let tools = tools![GetWeatherTool];
-    
-    let messages = vec![msg!(user "What's the weather in Paris?")];
-    
-    let request = CreateChatCompletionRequest {
-        model: "gpt-4".to_string(),
-        messages,
-        tools: Some(tools.tools().to_vec()),
-        ..Default::default()
-    };
-    
-    let response = client.chat().create(request).await?;
-    
-    if let Some(tool_calls) = &response.choices[0].message.tool_calls {
-        let results = dispatch_tool_calls(tool_calls, &tools).await?;
-    }
+async fn get_weather(args: WeatherArgs) -> Result<String> {
+    Ok(format!("Weather in {}: 22°{}", args.location, args.unit))
 }
 ```
 
-## What it does
+### Create an Agent
 
-- `#[tool]` - turns async functions into OpenAI tools
-- `#[derive(ToolArg)]` - generates JSON schemas for tool parameters
-- `#[derive(StructuredOutput)]` - for structured output schemas
-- `tools![]` - bundles tools with automatic dispatch
-- `msg!()` - shorthand for chat messages
+```rust
+let agent = Agent::builder()
+    .model("gpt-4")
+    .system_prompt("You are a helpful weather assistant")
+    .tools(tools![GetWeatherTool])
+    .build()?;
 
-Works with OpenAI, OpenRouter, and any OpenAI-compatible API.
+let response = agent.run("What's the weather in Paris?").await?;
+```
+
+### Multi-turn Conversations
+
+```rust
+let mut conversation = Conversation::with_system("You are helpful");
+conversation.add_user_message("Hello!");
+
+let response = agent.run_conversation(&mut conversation).await?;
+conversation.add_assistant_message(&response);
+
+conversation.add_user_message("Tell me more");
+let response = agent.run_conversation(&mut conversation).await?;
+```
+
+### Multi-Agent Patterns
+
+```rust
+// Specialized agents
+let analyst = Agent::builder()
+    .model("gpt-4")
+    .system_prompt("You analyze data")
+    .tools(tools![AnalyzeDataTool])
+    .build()?;
+
+let researcher = Agent::builder()
+    .model("gpt-4")
+    .system_prompt("You research topics")
+    .tools(tools![SearchTool])
+    .build()?;
+
+// Researcher finds data, analyst analyzes it
+let research = researcher.run("Find Rust adoption data").await?;
+let analysis = analyst.call_as_tool(format!("Analyze: {}", research)).await?;
+```
+
+Agents can call other agents as tools, maintaining private contexts and only exposing final results.
+
+## Features
+
+- **Type-safe tool definitions** - `#[tool]` and `#[derive(ToolArg)]`
+- **Agent execution loops** - Automatic tool calling and result handling
+- **Multi-agent coordination** - Agents as tools, private conversations
+- **Conversation management** - Track message history across turns
+- **Error handling** - Comprehensive error types, no unwraps
+- **Streaming support** - Coming soon
+
+## Examples
+
+See the [examples](examples/) directory:
+- `simple_agent.rs` - Basic agent with tools
+- `multi_agent.rs` - Multi-agent coordination patterns
+- `openrouter_tools.rs` - Using with OpenRouter API
+
+## Roadmap
+
+- [ ] Streaming responses
+- [ ] Agent teams and orchestration helpers
+- [ ] Prompt templates
+- [ ] Built-in retry logic
+- [ ] Observability hooks
+
+## License
+
+MIT OR Apache-2.0

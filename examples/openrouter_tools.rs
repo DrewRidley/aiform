@@ -11,9 +11,7 @@ struct WeatherArgs {
 }
 
 #[tool("Get the current weather for a location")]
-async fn get_weather(
-    args: WeatherArgs,
-) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+async fn get_weather(args: WeatherArgs) -> Result<String> {
     // Simulate weather API call
     let unit = match args.unit.as_str() {
         "celsius" => "C",
@@ -30,9 +28,7 @@ struct CalculatorArgs {
 }
 
 #[tool("Evaluate a mathematical expression")]
-async fn calculate(
-    args: CalculatorArgs,
-) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+async fn calculate(args: CalculatorArgs) -> Result<String> {
     // Simple calculator simulation
     match args.expression.as_str() {
         "2 + 2" => Ok("4".to_string()),
@@ -42,7 +38,7 @@ async fn calculate(
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn main() -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Set up OpenRouter client
     let api_key = env::var("OPENROUTER_API_KEY")
         .expect("OPENROUTER_API_KEY environment variable must be set");

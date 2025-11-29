@@ -205,9 +205,12 @@ fn impl_tool(func: &ItemFn, desc: &str) -> proc_macro2::TokenStream {
                 <#param_ty as ToolArg>::schema()
             }
 
-            async fn call(&self, args: serde_json::Value) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+            async fn call(&self, args: serde_json::Value) -> std::result::Result<String, Box<dyn std::error::Error + Send + Sync>> {
                 let parsed_args: #param_ty = serde_json::from_value(args)?;
-                #name(parsed_args).await
+                match #name(parsed_args).await {
+                    Ok(result) => Ok(result),
+                    Err(e) => Err(Box::new(e) as Box<dyn std::error::Error + Send + Sync>),
+                }
             }
         }
     }

@@ -1,16 +1,20 @@
-//! Simple macros for OpenAI-compatible tool calling and structured output.
+//! Type-safe AI agents and tool calling for Rust.
 //!
 //! Built on top of the [`async_openai`](https://docs.rs/async-openai) library,
-//! this crate provides derive macros and helpers for working with OpenAI tools
-//! and structured output.
+//! this crate provides:
+//! - Type-safe tool definitions with automatic schema generation
+//! - Agent execution loops with tool calling
+//! - Multi-agent communication
+//! - Conversation management
 //!
 //! Works with OpenAI, OpenRouter, and any OpenAI-compatible API.
 //!
-//! # Example
+//! # Quick Start
+//!
+//! ## Defining Tools
 //!
 //! ```no_run
-//! use aiform::*;
-//! use async_openai::{Client, types::CreateChatCompletionRequest};
+//! use aiform::prelude::*;
 //! use serde::Deserialize;
 //!
 //! #[derive(ToolArg, Deserialize)]
@@ -20,20 +24,73 @@
 //! }
 //!
 //! #[tool("Get the current weather for a location")]
-//! async fn get_weather(args: WeatherArgs) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+//! async fn get_weather(args: WeatherArgs) -> Result<String> {
 //!     Ok(format!("Weather in {}: 22°{}", args.location, args.unit))
 //! }
+//! ```
 //!
-//! # async fn example() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-//! let client = Client::new();
-//! let tools = tools![GetWeatherTool];
-//! let messages = vec![msg!(user "What's the weather in Paris?")];
+//! ## Creating an Agent
+//!
+//! ```no_run
+//! use aiform::prelude::*;
+//! # use serde::Deserialize;
+//! # #[derive(ToolArg, Deserialize)]
+//! # struct WeatherArgs { location: String, unit: String }
+//! # #[tool("Get weather")] async fn get_weather(args: WeatherArgs) -> Result<String> { Ok("".into()) }
+//!
+//! # async fn example() -> Result<()> {
+//! let agent = Agent::builder()
+//!     .model("gpt-4")
+//!     .system_prompt("You are a helpful weather assistant")
+//!     .tools(tools![GetWeatherTool])
+//!     .build()?;
+//!
+//! let response = agent.run("What's the weather in Paris?").await?;
+//! println!("{}", response);
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Multi-turn Conversations
+//!
+//! ```no_run
+//! use aiform::prelude::*;
+//! # async fn example() -> Result<()> {
+//! # let agent = Agent::builder().model("gpt-4").build()?;
+//!
+//! let mut conversation = Conversation::with_system("You are helpful");
+//! conversation.add_user_message("Hello!");
+//!
+//! let response = agent.run_conversation(&mut conversation).await?;
+//! conversation.add_assistant_message(&response);
+//!
+//! // Continue the conversation
+//! conversation.add_user_message("Tell me more");
+//! let response = agent.run_conversation(&mut conversation).await?;
 //! # Ok(())
 //! # }
 //! ```
 
 pub use aiform_macros::*;
 pub use async_openai as openai;
+
+pub mod agent;
+pub mod agent_tool;
+pub mod conversation;
+pub mod error;
+
+pub use agent::{Agent, AgentBuilder};
+pub use agent_tool::AgentTool;
+pub use conversation::Conversation;
+pub use error::{Error, Result};
+
+/// Convenience re-exports for common imports.
+pub mod prelude {
+    pub use crate::agent::{Agent, AgentBuilder};
+    pub use crate::conversation::Conversation;
+    pub use crate::error::{Error, Result};
+    pub use crate::{msg, tool, tools, StructuredOutput, Tool, ToolArg, ToolSet};
+}
 
 /// Combines tool definitions with their dispatch logic.
 ///
@@ -50,7 +107,10 @@ pub struct ToolSet {
             ) -> std::pin::Pin<
                 Box<
                     dyn std::future::Future<
-                            Output = Result<String, Box<dyn std::error::Error + Send + Sync>>,
+                            Output = std::result::Result<
+                                String,
+                                Box<dyn std::error::Error + Send + Sync>,
+                            >,
                         > + Send,
                 >,
             > + Send
@@ -69,7 +129,7 @@ impl ToolSet {
         &self,
         name: String,
         args: serde_json::Value,
-    ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> std::result::Result<String, Box<dyn std::error::Error + Send + Sync>> {
         (self.dispatcher)(name, args).await
     }
 }
@@ -113,7 +173,7 @@ macro_rules! tools {
                     )*
                     _ => Err("Unknown tool".into()),
                 }
-            }) as std::pin::Pin<Box<dyn std::future::Future<Output = Result<String, Box<dyn std::error::Error + Send + Sync>>> + Send>>
+            }) as std::pin::Pin<Box<dyn std::future::Future<Output = std::result::Result<String, Box<dyn std::error::Error + Send + Sync>>> + Send>>
         });
 
         ToolSet {
@@ -181,7 +241,7 @@ macro_rules! msg {
 pub async fn dispatch_tool_calls(
     tool_calls: &[async_openai::types::ChatCompletionMessageToolCall],
     toolset: &ToolSet,
-) -> Result<Vec<String>, Box<dyn std::error::Error + Send + Sync>> {
+) -> std::result::Result<Vec<String>, Box<dyn std::error::Error + Send + Sync>> {
     let mut results = vec![];
     for tool_call in tool_calls {
         let tool_name = tool_call.function.name.clone();
@@ -223,7 +283,7 @@ pub trait Tool {
     async fn call(
         &self,
         args: serde_json::Value,
-    ) -> Result<String, Box<dyn std::error::Error + Send + Sync>>;
+    ) -> std::result::Result<String, Box<dyn std::error::Error + Send + Sync>>;
 }
 
 /// Generates JSON schema for structured output.
@@ -247,13 +307,13 @@ pub mod ext {
             &self,
             messages: Vec<ChatCompletionRequestMessage>,
             tools: Vec<T>,
-        ) -> Result<String, async_openai::error::OpenAIError>;
+        ) -> std::result::Result<String, async_openai::error::OpenAIError>;
 
         /// Makes a chat completion request with structured output.
         async fn structured_output<S: StructuredOutput>(
             &self,
             messages: Vec<ChatCompletionRequestMessage>,
-        ) -> Result<S, async_openai::error::OpenAIError>;
+        ) -> std::result::Result<S, async_openai::error::OpenAIError>;
     }
 
     impl<C: async_openai::config::Config> OpenAIClientExt for async_openai::Client<C> {
@@ -261,7 +321,7 @@ pub mod ext {
             &self,
             _messages: Vec<ChatCompletionRequestMessage>,
             _tools: Vec<T>,
-        ) -> Result<String, async_openai::error::OpenAIError> {
+        ) -> std::result::Result<String, async_openai::error::OpenAIError> {
             // Implementation would create the request with tools
             // For now, placeholder
             Err(async_openai::error::OpenAIError::InvalidArgument(
@@ -272,7 +332,7 @@ pub mod ext {
         async fn structured_output<S: StructuredOutput>(
             &self,
             _messages: Vec<ChatCompletionRequestMessage>,
-        ) -> Result<S, async_openai::error::OpenAIError> {
+        ) -> std::result::Result<S, async_openai::error::OpenAIError> {
             // Implementation would use structured output
             // For now, placeholder
             Err(async_openai::error::OpenAIError::InvalidArgument(
@@ -312,7 +372,7 @@ mod tests {
     }
 
     #[tool("A test tool")]
-    async fn test_tool(args: TestArgs) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+    async fn test_tool(args: TestArgs) -> Result<String> {
         // Dummy implementation
         Ok(format!("Called with {} items", args.count))
     }
