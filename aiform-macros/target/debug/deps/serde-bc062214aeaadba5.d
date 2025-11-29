@@ -1,0 +1,14 @@
+/Users/drewridley/Documents/Projects/aiform/aiform-macros/target/debug/deps/serde-bc062214aeaadba5.d: /Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /Users/drewridley/Documents/Projects/aiform/aiform-macros/target/debug/build/serde-39c34f8c610ee168/out/private.rs
+
+/Users/drewridley/Documents/Projects/aiform/aiform-macros/target/debug/deps/libserde-bc062214aeaadba5.rlib: /Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /Users/drewridley/Documents/Projects/aiform/aiform-macros/target/debug/build/serde-39c34f8c610ee168/out/private.rs
+
+/Users/drewridley/Documents/Projects/aiform/aiform-macros/target/debug/deps/libserde-bc062214aeaadba5.rmeta: /Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /Users/drewridley/Documents/Projects/aiform/aiform-macros/target/debug/build/serde-39c34f8c610ee168/out/private.rs
+
+/Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs:
+/Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs:
+/Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs:
+/Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs:
+/Users/drewridley/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs:
+/Users/drewridley/Documents/Projects/aiform/aiform-macros/target/debug/build/serde-39c34f8c610ee168/out/private.rs:
+
+# env-dep:OUT_DIR=/Users/drewridley/Documents/Projects/aiform/aiform-macros/target/debug/build/serde-39c34f8c610ee168/out
